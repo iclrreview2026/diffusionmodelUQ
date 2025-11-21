@@ -1,32 +1,16 @@
 This repository contains implementations and scripts for evaluating uncertainty quantification (UQ) methods on UCI regression datasets. The codebase includes:
-- Conditional Diffusion Models (CDM): `cdm.py`, `cdm_split_cqr.py`
-- Deep Ensembles: `deep_ensemble.py`
-- Monte Carlo Dropout: `mcdropout.py` and related scripts
-- Neural net model code used by these methods: `net.py`
-- Example experiment/job scripts for  QUEST HPC: `scripts/*.sh`
-  - UPDATE: privatized for anonymity
-- Prepared dataset splits under `UCI_Datasets/` (one folder per dataset)
+- Conditional Diffusion Models (CDM): `cdm.py`,
 
 This README explains how to set up the environment, run experiments locally, and submit jobs to the QUEST cluster. The Python scripts include baked-in parameters (see each file for exact defaults). The run scripts in `scripts/` demonstrate recommended SLURM settings for QUEST.
 
 ## Quick links
 
-- Main training scripts: `cdm.py`, `cdm_split_cqr.py`, `deep_ensemble.py`, `mcdropout.py`
-- Inference / helper code: `net.py`
-- Job submission examples: `scripts/run_cdm.sh`, `scripts/run_job_cdm.sh`, `scripts/run_jobde.sh`, `scripts/run_jobmcd.sh`
-- Datasets: `UCI_Datasets/` (contains data/ subfolders for each dataset)
-
-## Repository contract (inputs / outputs)
-
-- Inputs: dataset folders under `UCI_Datasets/<dataset>/data/` and the Python scripts. Most scripts accept CLI args (see `--help`) but include baked defaults in the code and the `scripts/` wrappers.
-- Outputs: model checkpoints, logs, and results written relative to the working directory or dataset root (see each script for exact paths). SLURM job scripts redirect stdout/stderr to `/home/xyz1234/logs/*.out` and `.err` in examples — customize those paths for your account.
+- Main training scripts: `cdm.py`
 
 ## Environment setup
 
 These experiments were run with Conda environments. Example environment YAMLs are provided in `envs/`:
 
-- `envs/env-de.yaml` (deep ensemble)
-- `envs/env-mcdropout.yaml` (mc-dropout)
 - `envs/env-sc-cqr-cdm.yaml` (CDM / conditional diffusion)
 
 Recommended steps (local or on QUEST):
@@ -38,33 +22,13 @@ Recommended steps (local or on QUEST):
 # create the CDM environment
 conda env create -f envs/env-sc-cqr-cdm.yaml
 conda activate card_cdm
-
-# or create the deep ensemble env
-conda env create -f envs/env-de.yaml
-conda activate deep_ensemble
-
-# or the mc-dropout env
-conda env create -f envs/env-mcdropout.yaml
-conda activate mcdropout
 ```
-
 If you do not use Conda you can manually install the main dependencies (PyTorch or TensorFlow as required, numpy, scipy, pandas, scikit-learn). Use the environment YAMLs as a starting point.
 
 Notes for QUEST:
 
 - QUEST provides modules and GPUs; the `scripts/*.sh` job scripts assume you will activate a Conda environment inside the job (they use `eval "$(conda shell.bash hook)"` then `conda activate <env>`).
 - Adjust `#SBATCH` headers (account/project, output paths, partition, time) to match your allocation.
-
-## Dataset layout
-
-Each dataset under `UCI_Datasets/<name>/data/` contains:
-
-- `data.txt` — the full dataset (features + target) in a whitespace-separated format
-- `index_train_*.txt`, `index_test_*.txt` — pre-split train/test indices for cross-validation folds
-- `index_features.txt`, `index_target.txt` — column indices for features and target
-- `n_epochs.txt`, `n_hidden.txt`, `n_splits.txt`, `tau_values.txt`, `dropout_rates.txt` — utility files with default hyperparameters used by earlier experiments
-
-If you wish to use your own dataset, create the same structure (or modify the scripts to point to a different path). The training scripts accept a `--root` and `--dataset` CLI args which point to the dataset root and dataset name.
 
 ## Running locally (interactive / development)
 
@@ -81,20 +45,6 @@ For split/CQR variant:
 ```bash
 conda activate card_cdm
 python -u cdm_split_cqr.py --root /absolute/path/to/UCI_Datasets --dataset YearPredictionMSD --epochs 200 --dropout 0.15 --run_cdm
-```
-
-Deep ensemble example:
-
-```bash
-conda activate deep_ensemble
-python -u deep_ensemble.py --dataset concrete
-```
-
-Monte Carlo dropout example (script names vary; see `scripts/run_jobmcd.sh` for usage):
-
-```bash
-conda activate mcdropout
-python -u mcdropout.py --dir naval-propulsion-plant --epochx 15 --hidden 2
 ```
 
 Notes:
@@ -137,7 +87,7 @@ If you need to verify the job sees GPUs, the job scripts include a commented-out
 
 ## Where parameters live
 
-- Most script-level hyperparameters (epochs, dropout rates, dataset names) are provided via argparse CLI flags in the Python files but have defaults set in the source. Check the top of each Python file (`cdm.py`, `cdm_split_cqr.py`, `deep_ensemble.py`, `mcdropout.py`) to see the baked-in defaults.
+- Most script-level hyperparameters (epochs, dropout rates, dataset names) are provided via argparse CLI flags in the Python files but have defaults set in the source. Check the top of each Python file (`cdm.py`, `cdm_split_cqr.py`) to see the baked-in defaults.
 - The `UCI_Datasets/*/data/` folders include ancillary files like `n_epochs.txt` and `dropout_rates.txt` that were used by experiments; those help reproduce previously reported runs.
 
 ## Logging, outputs and checkpoints
@@ -156,14 +106,6 @@ If you need to verify the job sees GPUs, the job scripts include a commented-out
 1. Pick a dataset under `UCI_Datasets/` and confirm the `--root`/`--dataset` path you will use.
 2. Create/activate the matching Conda environment from `envs/`.
 3. Run the script locally for a quick smoke test with reduced epochs or submit a job to QUEST using a `scripts/*.sh` wrapper.
-
-## Files changed / key files
-
-- `cdm.py`, `cdm_split_cqr.py`: conditional diffusion model training and split/CQR experiments
-- `deep_ensemble.py`: deep ensemble training
-- `mcdropout.py`: MC-dropout training
-- `net.py`: neural network model definitions used by the above scripts
-- `scripts/*.sh`: SLURM job templates for QUEST
 
 ## Next steps and optional improvements
 
